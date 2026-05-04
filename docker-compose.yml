@@ -1,0 +1,18 @@
+services:
+  database:
+    image: "postgres:17-alpine"
+    container_name: "gowebserver-db"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_pw
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+    secrets:
+      - db_pw
+
+secrets:
+  db_pw:
+    file: ./secrets/dbpassword.txt
