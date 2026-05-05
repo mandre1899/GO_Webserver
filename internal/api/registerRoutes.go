@@ -39,5 +39,6 @@ func RegisterRoutes(mux *http.ServeMux, db *database.Queries, apiConf *middlewar
 	mux.HandleFunc("GET /api/chirps", GetChrips(db))
 	mux.HandleFunc("GET /api/chirps/{id}", GetChripById(db))
 	mux.HandleFunc("POST /api/users", CreateUser(db))
+	mux.Handle("POST /api/login", LoginUser(db))
 }
 
