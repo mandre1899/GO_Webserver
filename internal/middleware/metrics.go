@@ -7,6 +7,7 @@ import (
 
 type ApiConfig struct {
 	FileserverHits	atomic.Int32
+	JWTSecret       string
 }
 
 func (a *ApiConfig) MiddlewareMetricsInc(next http.Handler) http.Handler {

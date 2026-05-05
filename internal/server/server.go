@@ -31,7 +31,9 @@ func (s *WebServer) CreateServer() {
 	s.Db = database.New(db)
 
 	mux := http.NewServeMux()
-	s.ApiConf = middleware.ApiConfig{}
+	s.ApiConf = middleware.ApiConfig{
+		JWTSecret: os.Getenv("JWT_SECRET"),
+	}
 	s.Server = &http.Server{
 		Addr: ":8080",
 		Handler: mux,

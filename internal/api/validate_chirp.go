@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/mandre1899/GO_Webserver/internal/auth"
 	"github.com/mandre1899/GO_Webserver/internal/database"
+	"github.com/mandre1899/GO_Webserver/internal/middleware"
 )
 
 type req struct {
@@ -65,11 +67,28 @@ func GetChrips(db *database.Queries) http.HandlerFunc{
 	}
 }
 
-func ValidateChirpHandler(db *database.Queries) http.HandlerFunc{
+func ValidateChirpHandler(db *database.Queries, apiConf *middleware.ApiConfig) http.HandlerFunc{
 	return func (w http.ResponseWriter, r *http.Request){
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Missing authorization header"))
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		userID, err := auth.ValidateJWT(tokenString, apiConf.JWTSecret)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Invalid token"))
+			return
+		}
+
 		reqBody, err := io.ReadAll(r.Body)
 		if err != nil {
-
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Failed to read request body"))
+			return
 		}
 		replacer := strings.NewReplacer(
 			"Kerfuffle", "****",
@@ -94,13 +113,14 @@ func ValidateChirpHandler(db *database.Queries) http.HandlerFunc{
 		}
 		var chripCreate database.CreateChirpParams
 		chripCreate.Body = request.Body
-		chripCreate.UserID = request.User_id
+		chripCreate.UserID = userID
 		w.Header().Add("content-type", "application/json")
 		var dbRes database.Chirp
 		dbRes, err = db.CreateChirp(context.Background(), chripCreate)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("UUID not found"))
+			return
 		}
 		
 		w.WriteHeader(http.StatusCreated)
@@ -108,6 +128,7 @@ func ValidateChirpHandler(db *database.Queries) http.HandlerFunc{
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("Marshal failed"))
+			return
 		}
 		w.Write([]byte(resp))
 	}
